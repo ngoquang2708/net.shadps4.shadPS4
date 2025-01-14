@@ -77,8 +77,8 @@ modules:
       # don't include submodules, which shadps4 depends on (in the externals directory)
       - type: git
         url: https://github.com/shadps4-emu/shadPS4
-        commit: d94abffd9a6bba013fe2524a7e085ccfa253cedc
-        tag: Pre-release-shadPS4-2025-01-13-d94abfc
+        commit: d94abffd9a6bba013fe2524a7e085ccfa253ced9
+        tag: Pre-release-shadPS4-2025-01-13-d94abff
         x-checker-data:
           type: json
           url: https://api.github.com/repos/shadps4-emu/shadps4/releases
