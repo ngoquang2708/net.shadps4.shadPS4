@@ -79,8 +79,8 @@ modules:
       # don't include submodules, which shadps4 depends on (in the externals directory)
       - type: git
         url: https://github.com/shadps4-emu/shadPS4
-        tag: v.0.5.0
-        commit: a1a98966eee07e7ecf3a5e3836b5f2ecde5664b0
+        tag: v.0.6.0
+        commit: ec7a5412633f68228dab2dc59b5c79ca4be0b1fb
         x-checker-data:
           type: json
           url: https://api.github.com/repos/shadps4-emu/shadps4/releases/latest
@@ -88,6 +88,6 @@ modules:
           version-query: .tag_name | sub("^v."; "")
       # Use updated metainfo.xml with inline releases from main branch https://github.com/flatpak/flatpak/issues/6057
       - type: file
-        url: https://raw.githubusercontent.com/shadps4-emu/shadPS4/af8c748e9cb3edc78a3f0e189fbba41bfdba0786/dist/net.shadps4.shadPS4.metainfo.xml
-        sha256: b3c45ef60748c7f791ef932a461b86990b380ca527d92d5474d65e3620297566
+        url: https://raw.githubusercontent.com/shadps4-emu/shadPS4/f3810cebeacbf85496b2bb153374d5fcfcdfbedf/dist/net.shadps4.shadPS4.metainfo.xml
+        sha256: 3fa2aec72da3d3c59a9848e67b7986a01dbfb881ec1a0e175162be20a6f3a48e
         dest: dist
