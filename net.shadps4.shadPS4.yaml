@@ -25,6 +25,8 @@ finish-args:
   - --filesystem=/run/media
   # Required for Gamescope on Steam Deck
   - --filesystem=xdg-run/gamescope-0:ro
+  # Discord RPC support
+  - --filesystem=xdg-run/discord-ipc-0
 
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.llvm19
