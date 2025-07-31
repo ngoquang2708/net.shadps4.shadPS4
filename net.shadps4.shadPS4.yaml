@@ -27,6 +27,7 @@ finish-args:
   - --filesystem=xdg-run/gamescope-0:ro
   # Discord RPC support
   - --filesystem=xdg-run/discord-ipc-0
+  - --filesystem=xdg-run/app/com.discordapp.Discord:create
 
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.llvm19
