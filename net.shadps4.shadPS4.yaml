@@ -95,6 +95,6 @@ modules:
         dest-filename: net.shadps4.shadPS4.sh
         commands:
           - for i in {0..9}; do test -S $XDG_RUNTIME_DIR/discord-ipc-$i || ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-$i; done
-          - shadps4 $@
+          - shadps4 "$@"
     post-install:
       - install -Dm 755 -t /app/bin/ ${FLATPAK_BUILDER_BUILDDIR}/${FLATPAK_ID}.sh
