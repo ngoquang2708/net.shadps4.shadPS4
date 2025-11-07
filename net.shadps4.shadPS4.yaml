@@ -14,12 +14,10 @@ finish-args:
   - --share=ipc
   # Audio
   - --socket=pulseaudio
-  - --talk-name=org.kde.StatusNotifierWatcher
   # Reading the game list is very slow through the XDG portal
   # More filesystem overrides may need to be added by users
   # depending on where they store their games but these
   # are reasonable defaults for direct access.
-  - --share=network
   - --filesystem=home
   - --filesystem=/media
   - --filesystem=/run/media
@@ -28,6 +26,9 @@ finish-args:
   # Discord RPC support
   - --filesystem=xdg-run/discord-ipc-0
   - --filesystem=xdg-run/app/com.discordapp.Discord:create
+  # etc
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --share=network
 
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.llvm19
@@ -42,8 +43,6 @@ add-extensions:
 
 cleanup-commands:
   - mkdir -p ${FLATPAK_DEST}/lib/ffmpeg
-  # Remove XML warning https://github.com/flatpak/flatpak/issues/6057
-  - rm -f ${FLATPAK_DEST}/share/metainfo/releases/net.shadps4.shadPS4.releases.xml
 
 modules:
   - name: rapidjson
@@ -66,7 +65,7 @@ modules:
     cleanup:
       - '*'
 
-  - name: shadps4
+  - name: shadps4-qtlauncher
     buildsystem: cmake-ninja
     builddir: true
     build-options:
@@ -74,7 +73,6 @@ modules:
       prepend-ld-library-path: /usr/lib/sdk/llvm19/lib
     config-opts:
       - -DENABLE_UPDATER=OFF
-      - -DENABLE_QT_GUI=ON
       - -DCMAKE_C_COMPILER=clang
       - -DCMAKE_CXX_COMPILER=clang++
       - -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -83,7 +81,53 @@ modules:
       # We're using a git source here rather than a zipball because zip/tarballs
       # don't include submodules, which shadps4 depends on (in the externals directory)
       - type: git
-        url: https://github.com/shadps4-emu/shadPS4
+        url: https://github.com/shadps4-emu/shadps4-qtlauncher.git
+        tag: shadPS4QtLauncher-2025-11-06-d0c3bd6491f07d11b5b6a334ed540b57d767d1c2
+        commit: d0c3bd6491f07d11b5b6a334ed540b57d767d1c2
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/shadps4-emu/shadps4-qtlauncher/releases
+          tag-query: .tag_name
+          version-query: .[0].tag_name | capture(".*(?<v>\\d{4}-\\d{2}-\\d{2})").v
+      - type: script
+        dest-filename: net.shadps4.shadPS4.qtlauncher.sh
+        commands:
+          - for i in {0..9}; do test -S $XDG_RUNTIME_DIR/discord-ipc-$i || ln -sf
+            {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-$i; done
+          - |
+            for config_file in versions.json qt_ui.ini; do
+              if [[ ! -f ${XDG_DATA_HOME}/shadPS4QtLauncher/${config_file} ]]; then
+                echo "Installing default ${config_file}..."
+                cp /app/etc/default/shadps4/${config_file} ${XDG_DATA_HOME}/shadPS4QtLauncher/
+              fi
+            done
+          - shadPS4QtLauncher "$@"
+      - type: file
+        path: versions.json
+      - type: file
+        path: qt_ui.ini
+    post-install:
+      - desktop-file-edit --set-key=Exec --set-value=${FLATPAK_ID}.qtlauncher.sh /app/share/applications/${FLATPAK_ID}.desktop
+      - install -m755 -t /app/bin/ ${FLATPAK_BUILDER_BUILDDIR}/${FLATPAK_ID}.qtlauncher.sh
+      - install -D -m644 -t /app/etc/default/shadps4 ${FLATPAK_BUILDER_BUILDDIR}/versions.json
+      - install -D -m644 -t /app/etc/default/shadps4 ${FLATPAK_BUILDER_BUILDDIR}/qt_ui.ini
+
+  - name: shadps4
+    buildsystem: cmake-ninja
+    builddir: true
+    build-options:
+      append-path: /usr/lib/sdk/llvm19/bin
+      prepend-ld-library-path: /usr/lib/sdk/llvm19/lib
+    config-opts:
+      - -DCMAKE_C_COMPILER=clang
+      - -DCMAKE_CXX_COMPILER=clang++
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO=ON
+    sources:
+      # We're using a git source here rather than a zipball because zip/tarballs
+      # don't include submodules, which shadps4 depends on (in the externals directory)
+      - type: git
+        url: https://github.com/shadps4-emu/shadPS4.git
         tag: v.0.12.5
         commit: 3ce1ac5e86f4ef2c3c1d75fba499cc75c2587f85
         x-checker-data:
@@ -98,4 +142,4 @@ modules:
             {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-$i; done
           - shadps4 "$@"
     post-install:
-      - install -Dm 755 -t /app/bin/ ${FLATPAK_BUILDER_BUILDDIR}/${FLATPAK_ID}.sh
+      - install -D -m755 -t /app/bin/ ${FLATPAK_BUILDER_BUILDDIR}/${FLATPAK_ID}.sh
