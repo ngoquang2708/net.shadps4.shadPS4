@@ -2,7 +2,7 @@ app-id: net.shadps4.shadPS4
 runtime: org.kde.Platform
 runtime-version: '6.8'
 sdk: org.kde.Sdk
-command: net.shadps4.shadPS4.qtlauncher.sh
+command: net.shadps4.shadPS4.sh
 
 finish-args:
   # gamepad and 3D hardware support
@@ -65,6 +65,60 @@ modules:
     cleanup:
       - '*'
 
+  - name: shadps4-qtlauncher
+    buildsystem: cmake-ninja
+    builddir: true
+    build-options:
+      append-path: /usr/lib/sdk/llvm19/bin
+      prepend-ld-library-path: /usr/lib/sdk/llvm19/lib
+    config-opts:
+      - -DENABLE_UPDATER=OFF
+      - -DCMAKE_C_COMPILER=clang
+      - -DCMAKE_CXX_COMPILER=clang++
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO=ON
+    sources:
+      # We're using a git source here rather than a zipball because zip/tarballs
+      # don't include submodules, which shadps4 depends on (in the externals directory)
+      - type: git
+        url: https://github.com/shadps4-emu/shadps4-qtlauncher.git
+        tag: shadPS4QtLauncher-2025-12-01-0d56f29269af7447f1030d99d3e24bb54f363019
+        commit: 0d56f29269af7447f1030d99d3e24bb54f363019
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/shadps4-emu/shadps4-qtlauncher/releases
+          tag-query: .[0].tag_name
+          version-query: .[0].tag_name | capture(".*(?<v>\\d{4}-\\d{2}-\\d{2})").v
+      - type: patch
+        path: net.shadps4.shadPS4.qtlauncher-hide-version-manager.patch
+      - type: script
+        dest-filename: net.shadps4.shadPS4.sh
+        commands:
+          - |
+            for i in {0..9}; do
+              if [[ ! -S "${XDG_RUNTIME_DIR}/discord-ipc-$i" ]]; then
+                ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-$i
+              fi
+            done
+            mkdir -p "${XDG_DATA_HOME}/shadPS4QtLauncher/"
+            for config_file in versions.json qt_ui.ini; do
+              if [[ ! -f ${XDG_DATA_HOME}/shadPS4QtLauncher/${config_file} ]]; then
+                echo "Installing default ${config_file}..."
+                cp /app/etc/default/shadps4/${config_file} ${XDG_DATA_HOME}/shadPS4QtLauncher/
+              fi
+            done
+            shadPS4QtLauncher "$@"
+      - type: file
+        path: versions.json
+      - type: file
+        path: qt_ui.ini
+    post-install:
+      - mv /app/share/applications/net.shadps4.shadps4-qtlauncher.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - desktop-file-edit --set-key=Exec --set-value=${FLATPAK_ID}.sh /app/share/applications/${FLATPAK_ID}.desktop
+      - install -D -m755 -t /app/bin/ ${FLATPAK_BUILDER_BUILDDIR}/${FLATPAK_ID}.sh
+      - install -D -m644 -t /app/etc/default/shadps4 ${FLATPAK_BUILDER_BUILDDIR}/versions.json
+      - install -D -m644 -t /app/etc/default/shadps4 ${FLATPAK_BUILDER_BUILDDIR}/qt_ui.ini
+
   - name: shadps4
     buildsystem: cmake-ninja
     builddir: true
@@ -88,61 +142,5 @@ modules:
           url: https://api.github.com/repos/shadps4-emu/shadps4/releases/latest
           tag-query: .tag_name
           version-query: .tag_name | sub("^v."; "")
-      - type: script
-        dest-filename: net.shadps4.shadPS4.sh
-        commands:
-          - for i in {0..9}; do test -S $XDG_RUNTIME_DIR/discord-ipc-$i || ln -sf
-            {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-$i; done
-          - shadps4 "$@"
     post-install:
-      - install -D -m755 -t /app/bin/ ${FLATPAK_BUILDER_BUILDDIR}/${FLATPAK_ID}.sh
-
-  - name: shadps4-qtlauncher
-    buildsystem: cmake-ninja
-    builddir: true
-    build-options:
-      append-path: /usr/lib/sdk/llvm19/bin
-      prepend-ld-library-path: /usr/lib/sdk/llvm19/lib
-    config-opts:
-      - -DENABLE_UPDATER=OFF
-      - -DCMAKE_C_COMPILER=clang
-      - -DCMAKE_CXX_COMPILER=clang++
-      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
-      - -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO=ON
-    sources:
-      # We're using a git source here rather than a zipball because zip/tarballs
-      # don't include submodules, which shadps4 depends on (in the externals directory)
-      - type: git
-        url: https://github.com/shadps4-emu/shadps4-qtlauncher.git
-        tag: shadPS4QtLauncher-2025-11-27-ec3e5912c176e609c3ca81d619eb1523c8484c5e
-        commit: ec3e5912c176e609c3ca81d619eb1523c8484c5e
-        x-checker-data:
-          type: json
-          url: https://api.github.com/repos/shadps4-emu/shadps4-qtlauncher/releases
-          tag-query: .[0].tag_name
-          version-query: .[0].tag_name | capture(".*(?<v>\\d{4}-\\d{2}-\\d{2})").v
-      - type: patch
-        path: net.shadps4.shadPS4.qtlauncher-hide-version-manager.patch
-      - type: script
-        dest-filename: net.shadps4.shadPS4.qtlauncher.sh
-        commands:
-          - for i in {0..9}; do test -S $XDG_RUNTIME_DIR/discord-ipc-$i || ln -sf
-            {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-$i; done
-          - |
-            mkdir -p "${XDG_DATA_HOME}/shadPS4QtLauncher/"
-            for config_file in versions.json qt_ui.ini; do
-              if [[ ! -f ${XDG_DATA_HOME}/shadPS4QtLauncher/${config_file} ]]; then
-                echo "Installing default ${config_file}..."
-                cp /app/etc/default/shadps4/${config_file} ${XDG_DATA_HOME}/shadPS4QtLauncher/
-              fi
-            done
-          - shadPS4QtLauncher "$@"
-      - type: file
-        path: versions.json
-      - type: file
-        path: qt_ui.ini
-    post-install:
-      - desktop-file-edit --set-key=Exec --set-value=${FLATPAK_ID}.qtlauncher.sh /app/share/applications/${FLATPAK_ID}.desktop
-      - install -m755 -t /app/bin/ ${FLATPAK_BUILDER_BUILDDIR}/${FLATPAK_ID}.qtlauncher.sh
-      - install -D -m644 -t /app/etc/default/shadps4 ${FLATPAK_BUILDER_BUILDDIR}/versions.json
-      - install -D -m644 -t /app/etc/default/shadps4 ${FLATPAK_BUILDER_BUILDDIR}/qt_ui.ini
+      - install -D -m755 -t /app/share/metainfo/ ${FLATPAK_BUILDER_BUILDDIR}/dist/${FLATPAK_ID}.metainfo.xml
