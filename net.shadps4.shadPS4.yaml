@@ -142,5 +142,9 @@ modules:
           url: https://api.github.com/repos/shadps4-emu/shadps4/releases/latest
           tag-query: .tag_name
           version-query: .tag_name | sub("^v."; "")
+      # Add a note to the metainfo about the Flatpak distribution being hardwired
+      # to the bundled emulator rather than using the launcher's version manager
+      - type: patch
+        path: net.shadps4.shadPS4.flatpak-metainfo.patch
     post-install:
       - install -D -m755 -t /app/share/metainfo/ ${FLATPAK_BUILDER_BUILDDIR}/dist/${FLATPAK_ID}.metainfo.xml
