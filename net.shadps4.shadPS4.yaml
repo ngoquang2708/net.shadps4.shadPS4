@@ -110,6 +110,19 @@ modules:
       - install -D -m644 -t /app/etc/default/shadps4 ${FLATPAK_BUILDER_BUILDDIR}/versions.json
       - install -D -m644 -t /app/etc/default/shadps4 ${FLATPAK_BUILDER_BUILDDIR}/qt_ui.ini
 
+  # KDE runtime only has fmtlib 11.x. Check if this can be removed with the next runtime update.
+  - name: fmtlib
+    buildsystem: cmake-ninja
+    sources:
+      - type: archive
+        url: https://github.com/fmtlib/fmt/releases/download/12.1.0/fmt-12.1.0.zip
+        sha256: 695fd197fa5aff8fc67b5f2bbc110490a875cdf7a41686ac8512fb480fa8ada7
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/fmtlib/fmt/releases/latest
+          tag-query: .tag_name
+          version-query: .tag_name | sub("^v."; "")
+
   - name: shadps4
     buildsystem: cmake-ninja
     builddir: true
@@ -126,8 +139,8 @@ modules:
       # don't include submodules, which shadps4 depends on (in the externals directory)
       - type: git
         url: https://github.com/shadps4-emu/shadPS4.git
-        tag: v.0.15.0
-        commit: 4d62930075925f5ff7c1d0d9db015e2b0b588397
+        tag: v.0.16.0
+        commit: 5be3f0a30b4ad4bfd17e76e845b45f86c2e9530f
         x-checker-data:
           type: json
           url: https://api.github.com/repos/shadps4-emu/shadps4/releases/latest
