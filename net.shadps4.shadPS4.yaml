@@ -99,6 +99,7 @@ modules:
           url: https://api.github.com/repos/fmtlib/fmt/releases/latest
           tag-query: .tag_name
           version-query: .tag_name | sub("^v."; "")
+          url-query: assets[1].browser_download_url
 
   - name: shadps4
     buildsystem: cmake-ninja
